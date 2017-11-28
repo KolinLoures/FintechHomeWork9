@@ -36,10 +36,13 @@ public class GetNewsUseCase extends BaseUseCase<List<NewsPojo>, GetNewsUseCase.G
     }
 
     private Observable<List<NewsPojo>> loadFromCacheAndNetwork() {
-        return Observable
-                .concat(
-                        api.getLatesNews().map(NewsResponse::getPayload).doOnNext(cache::putToCache),
-                        cache.getFromCache())
+        return api
+                .getLatesNews()
+                .map(NewsResponse::getPayload)
+                .doOnNext(cache::putToCache)
+                .onErrorResumeNext(throwable -> {
+                    return cache.getFromCache();
+                })
                 .map(newsPojos -> {
                     Collections.sort(newsPojos, (o1, o2) -> Long.compare(o1.getPublicationDate(), o2.getPublicationDate()));
                     return newsPojos;
